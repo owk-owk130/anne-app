@@ -6,7 +6,7 @@ import {
   X
 } from "lucide-react";
 import { useState } from "react";
-import { imageAnalysisAgent } from "~/lib/mastra/index";
+import { imageAnalysisAgent } from "~/lib/mastra/imageAnalysis";
 
 interface Comment {
   id: string;
