@@ -1,5 +1,5 @@
 {
-  "name": "anne-app",
+  "name": "@anne-app/backend",
   "module": "index.ts",
   "type": "module",
   "scripts": {
