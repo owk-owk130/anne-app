@@ -41,7 +41,7 @@
     "include": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.json"],
     "ignore": [
       "**/node_modules/**",
-      "**/dist/**",
+      "**/dist/**", 
       "**/src-tauri/**",
       "**/public/**",
       "**/.vite/**",
