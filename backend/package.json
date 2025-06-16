@@ -15,12 +15,16 @@
     "check:fix": "biome check --write ."
   },
   "dependencies": {
-    "express": "^5.1.0"
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "multer": "^2.0.1"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@types/bun": "latest",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
+    "@types/multer": "^1.4.13",
     "typescript": "^5.8.3"
   }
 }
