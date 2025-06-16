@@ -12,6 +12,9 @@
       },
       "style": {
         "noNonNullAssertion": "off"
+      },
+      "complexity": {
+        "noForEach": "off"
       }
     }
   },
@@ -41,7 +44,7 @@
     "include": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.json"],
     "ignore": [
       "**/node_modules/**",
-      "**/dist/**", 
+      "**/dist/**",
       "**/src-tauri/**",
       "**/public/**",
       "**/.vite/**",

@@ -2,10 +2,12 @@ import {
   Image as ImageIcon,
   Loader2,
   MessageSquare,
+  Save,
   Upload,
   X
 } from "lucide-react";
 import { useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { imageAnalysisAgent } from "~/lib/mastra/imageAnalysis";
 
 interface Comment {
@@ -21,6 +23,8 @@ export default function ImageAnalysisChat() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [userComment, setUserComment] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedImageId, setSavedImageId] = useState<string | null>(null);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -80,16 +84,48 @@ export default function ImageAnalysisChat() {
     setUserComment("");
   };
 
+  const saveImage = async () => {
+    if (!selectedImage || !imagePreview) return;
+
+    setIsSaving(true);
+    try {
+      // Convert image to Uint8Array
+      const response = await fetch(imagePreview);
+      const blob = await response.blob();
+      const arrayBuffer = await blob.arrayBuffer();
+      const imageData = Array.from(new Uint8Array(arrayBuffer));
+
+      // Get AI analysis result if available
+      const aiComment = comments.find(comment => comment.isAI);
+      const analysisResult = aiComment?.text || null;
+
+      // Save image via Tauri command
+      const imageId = await invoke<string>("save_image", {
+        imageData,
+        originalName: selectedImage.name,
+        analysisResult,
+      });
+
+      setSavedImageId(imageId);
+      console.log("画像が保存されました:", imageId);
+    } catch (error) {
+      console.error("画像保存エラー:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const clearImage = () => {
     setSelectedImage(null);
     setImagePreview(null);
     setComments([]);
+    setSavedImageId(null);
   };
 
   console.log("ImageAnalysisChat rendered");
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
+    <div className="min-h-screen p-4">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-center mb-8 text-gray-900 dark:text-white">
           Mastra AI画像解析コメント
@@ -133,24 +169,50 @@ export default function ImageAnalysisChat() {
               >
                 <X className="h-4 w-4" />
               </button>
-              <button
-                type="button"
-                onClick={analyzeImage}
-                disabled={isAnalyzing}
-                className="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-              >
-                {isAnalyzing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>分析中...</span>
-                  </>
-                ) : (
-                  <>
-                    <ImageIcon className="h-4 w-4" />
-                    <span>Mastra AIで画像を分析</span>
-                  </>
-                )}
-              </button>
+              <div className="mt-4 space-y-2">
+                <button
+                  type="button"
+                  onClick={analyzeImage}
+                  disabled={isAnalyzing}
+                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>分析中...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ImageIcon className="h-4 w-4" />
+                      <span>Mastra AIで画像を分析</span>
+                    </>
+                  )}
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={saveImage}
+                  disabled={isSaving || !selectedImage}
+                  className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>保存中...</span>
+                    </>
+                  ) : savedImageId ? (
+                    <>
+                      <Save className="h-4 w-4" />
+                      <span>保存済み</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" />
+                      <span>画像を保存</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           )}
         </div>
