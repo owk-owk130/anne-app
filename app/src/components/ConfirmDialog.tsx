@@ -1,4 +1,4 @@
-import { AlertTriangle, X } from "lucide-react";
+import { AlertTriangle, X } from 'lucide-react';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -15,9 +15,9 @@ export default function ConfirmDialog({
   isOpen,
   title,
   message,
-  confirmText = "削除",
-  cancelText = "キャンセル",
-  confirmButtonClass = "bg-red-600 hover:bg-red-700",
+  confirmText = '削除',
+  cancelText = 'キャンセル',
+  confirmButtonClass = 'bg-red-600 hover:bg-red-700',
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {

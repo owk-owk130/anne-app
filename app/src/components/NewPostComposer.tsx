@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
-import { Loader2, X, Sparkles, Upload } from "lucide-react";
-import { imageAnalysisAgent } from "~/lib/mastra/imageAnalysis";
+import { useState, useRef } from 'react';
+import { Loader2, X, Sparkles, Upload } from 'lucide-react';
+import { imageAnalysisAgent } from '~/lib/mastra/imageAnalysis';
 
 interface NewPostComposerProps {
   onPostCreate: (
@@ -11,7 +11,7 @@ interface NewPostComposerProps {
 }
 
 export default function NewPostComposer({
-  onPostCreate
+  onPostCreate,
 }: NewPostComposerProps) {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -34,7 +34,7 @@ export default function NewPostComposer({
   const handleDrop = (event: React.DragEvent) => {
     event.preventDefault();
     const file = event.dataTransfer.files[0];
-    if (file?.type.startsWith("image/")) {
+    if (file?.type.startsWith('image/')) {
       setSelectedImage(file);
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -64,10 +64,10 @@ export default function NewPostComposer({
       // AI分析を実行
       let aiAnalysis: string | undefined;
       try {
-        const base64 = imagePreview.split(",")[1];
+        const base64 = imagePreview.split(',')[1];
         aiAnalysis = await imageAnalysisAgent(base64);
       } catch (error) {
-        console.error("AI分析エラー:", error);
+        console.error('AI分析エラー:', error);
         aiAnalysis = undefined; // AI分析失敗時はundefinedにして投稿は続行
       }
 
@@ -80,10 +80,10 @@ export default function NewPostComposer({
       setSelectedImage(null);
       setImagePreview(null);
       if (fileInputRef.current) {
-        fileInputRef.current.value = "";
+        fileInputRef.current.value = '';
       }
     } catch (error) {
-      console.error("投稿作成エラー:", error);
+      console.error('投稿作成エラー:', error);
     } finally {
       setIsPosting(false);
       setIsAnalyzing(false);
@@ -94,7 +94,7 @@ export default function NewPostComposer({
     setSelectedImage(null);
     setImagePreview(null);
     if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+      fileInputRef.current.value = '';
     }
   };
 
@@ -103,14 +103,14 @@ export default function NewPostComposer({
   };
 
   const handleUploadKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === "Enter" || event.key === " ") {
+    if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       handleUploadClick();
     }
   };
 
   const handleClearKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === "Enter" || event.key === " ") {
+    if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       clearImage();
     }

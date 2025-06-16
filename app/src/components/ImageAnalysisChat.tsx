@@ -4,11 +4,11 @@ import {
   MessageSquare,
   Save,
   Upload,
-  X
-} from "lucide-react";
-import { useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { imageAnalysisAgent } from "~/lib/mastra/imageAnalysis";
+  X,
+} from 'lucide-react';
+import { useState } from 'react';
+import { invoke } from '@tauri-apps/api/core';
+import { imageAnalysisAgent } from '~/lib/mastra/imageAnalysis';
 
 interface Comment {
   id: string;
@@ -22,7 +22,7 @@ export default function ImageAnalysisChat() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [userComment, setUserComment] = useState("");
+  const [userComment, setUserComment] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [savedImageId, setSavedImageId] = useState<string | null>(null);
 
@@ -44,7 +44,7 @@ export default function ImageAnalysisChat() {
     setIsAnalyzing(true);
     try {
       // Convert image to base64
-      const base64 = imagePreview.split(",")[1];
+      const base64 = imagePreview.split(',')[1];
 
       const text = await imageAnalysisAgent(base64);
 
@@ -52,17 +52,17 @@ export default function ImageAnalysisChat() {
         id: Date.now().toString(),
         text,
         timestamp: new Date(),
-        isAI: true
+        isAI: true,
       };
 
       setComments((prev) => [...prev, newComment]);
     } catch (error) {
-      console.error("画像分析エラー:", error);
+      console.error('画像分析エラー:', error);
       const errorComment: Comment = {
         id: Date.now().toString(),
-        text: "すみません、画像の分析中にエラーが発生しました。APIキーが正しく設定されているか確認してください。",
+        text: 'すみません、画像の分析中にエラーが発生しました。APIキーが正しく設定されているか確認してください。',
         timestamp: new Date(),
-        isAI: true
+        isAI: true,
       };
       setComments((prev) => [...prev, errorComment]);
     } finally {
@@ -77,11 +77,11 @@ export default function ImageAnalysisChat() {
       id: Date.now().toString(),
       text: userComment,
       timestamp: new Date(),
-      isAI: false
+      isAI: false,
     };
 
     setComments((prev) => [...prev, newComment]);
-    setUserComment("");
+    setUserComment('');
   };
 
   const saveImage = async () => {
@@ -96,20 +96,20 @@ export default function ImageAnalysisChat() {
       const imageData = Array.from(new Uint8Array(arrayBuffer));
 
       // Get AI analysis result if available
-      const aiComment = comments.find(comment => comment.isAI);
+      const aiComment = comments.find((comment) => comment.isAI);
       const analysisResult = aiComment?.text || null;
 
       // Save image via Tauri command
-      const imageId = await invoke<string>("save_image", {
+      const imageId = await invoke<string>('save_image', {
         imageData,
         originalName: selectedImage.name,
         analysisResult,
       });
 
       setSavedImageId(imageId);
-      console.log("画像が保存されました:", imageId);
+      console.log('画像が保存されました:', imageId);
     } catch (error) {
-      console.error("画像保存エラー:", error);
+      console.error('画像保存エラー:', error);
     } finally {
       setIsSaving(false);
     }
@@ -122,7 +122,7 @@ export default function ImageAnalysisChat() {
     setSavedImageId(null);
   };
 
-  console.log("ImageAnalysisChat rendered");
+  console.log('ImageAnalysisChat rendered');
 
   return (
     <div className="min-h-screen p-4">
@@ -188,7 +188,7 @@ export default function ImageAnalysisChat() {
                     </>
                   )}
                 </button>
-                
+
                 <button
                   type="button"
                   onClick={saveImage}
@@ -232,19 +232,19 @@ export default function ImageAnalysisChat() {
                   key={comment.id}
                   className={`p-4 rounded-lg ${
                     comment.isAI
-                      ? "bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500"
-                      : "bg-gray-50 dark:bg-gray-700 border-l-4 border-green-500"
+                      ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500'
+                      : 'bg-gray-50 dark:bg-gray-700 border-l-4 border-green-500'
                   }`}
                 >
                   <div className="flex items-center space-x-2 mb-2">
                     <span
                       className={`text-sm font-medium ${
                         comment.isAI
-                          ? "text-blue-600 dark:text-blue-400"
-                          : "text-green-600 dark:text-green-400"
+                          ? 'text-blue-600 dark:text-blue-400'
+                          : 'text-green-600 dark:text-green-400'
                       }`}
                     >
-                      {comment.isAI ? "Mastra AI分析" : "あなた"}
+                      {comment.isAI ? 'Mastra AI分析' : 'あなた'}
                     </span>
                     <span className="text-xs text-gray-500">
                       {comment.timestamp.toLocaleTimeString()}
@@ -266,7 +266,7 @@ export default function ImageAnalysisChat() {
                   onChange={(e) => setUserComment(e.target.value)}
                   placeholder="コメントを入力..."
                   className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                  onKeyPress={(e) => e.key === "Enter" && addUserComment()}
+                  onKeyPress={(e) => e.key === 'Enter' && addUserComment()}
                 />
                 <button
                   type="button"

@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { ImageIcon, Calendar, MessageSquare } from "lucide-react";
+import { useEffect, useState, useCallback } from 'react';
+import { invoke } from '@tauri-apps/api/core';
+import { ImageIcon, Calendar, MessageSquare } from 'lucide-react';
 
 interface Comment {
   id: string;
@@ -23,7 +23,7 @@ interface SavedImagesGalleryProps {
 }
 
 export default function SavedImagesGallery({
-  onImageSelect
+  onImageSelect,
 }: SavedImagesGalleryProps) {
   const [savedImages, setSavedImages] = useState<ImageMetadata[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,11 +33,11 @@ export default function SavedImagesGallery({
     setLoading(true);
     setError(null);
     try {
-      const images = await invoke<ImageMetadata[]>("get_saved_images");
+      const images = await invoke<ImageMetadata[]>('get_saved_images');
       setSavedImages(images.reverse()); // 新しい順に表示
     } catch (err) {
-      console.error("保存済み画像の読み込みエラー:", err);
-      setError("保存済み画像の読み込みに失敗しました");
+      console.error('保存済み画像の読み込みエラー:', err);
+      setError('保存済み画像の読み込みに失敗しました');
     } finally {
       setLoading(false);
     }
@@ -49,12 +49,12 @@ export default function SavedImagesGallery({
 
   const formatDate = (timestamp: string) => {
     const date = new Date(timestamp);
-    return date.toLocaleDateString("ja-JP", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
+    return date.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   };
 

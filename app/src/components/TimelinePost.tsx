@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react";
-import { MoreHorizontal, Bot, User, Send, Clock, Trash2 } from "lucide-react";
-import type { Post, Comment } from "~/types/posts";
+import { useState, useEffect, useRef } from 'react';
+import { MoreHorizontal, Bot, User, Send, Clock, Trash2 } from 'lucide-react';
+import type { Post, Comment } from '~/types/posts';
 
 interface TimelinePostProps {
   post: Post;
@@ -13,9 +13,9 @@ export default function TimelinePost({
   post,
   onComment,
   onDeletePost,
-  onDeleteComment
+  onDeleteComment,
 }: TimelinePostProps) {
-  const [newComment, setNewComment] = useState("");
+  const [newComment, setNewComment] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -31,11 +31,11 @@ export default function TimelinePost({
     };
 
     if (showDropdown) {
-      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showDropdown]);
 
@@ -47,25 +47,25 @@ export default function TimelinePost({
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffMins < 1) return "今";
+    if (diffMins < 1) return '今';
     if (diffMins < 60) return `${diffMins}分前`;
     if (diffHours < 24) return `${diffHours}時間前`;
     if (diffDays < 7) return `${diffDays}日前`;
 
-    return postTime.toLocaleDateString("ja-JP", {
-      month: "short",
-      day: "numeric"
+    return postTime.toLocaleDateString('ja-JP', {
+      month: 'short',
+      day: 'numeric',
     });
   };
 
   const handleAddComment = () => {
     if (!newComment.trim()) return;
     onComment(post.id, newComment.trim());
-    setNewComment("");
+    setNewComment('');
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleAddComment();
     }
@@ -76,10 +76,10 @@ export default function TimelinePost({
 
   if (post.ai_analysis) {
     allComments.push({
-      id: "ai_analysis",
+      id: 'ai_analysis',
       text: post.ai_analysis,
       timestamp: post.timestamp,
-      is_ai: true
+      is_ai: true,
     });
   }
 
@@ -94,11 +94,11 @@ export default function TimelinePost({
       <header className="flex items-center justify-between p-4 pb-3">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-            {post.author_name ? post.author_name[0].toUpperCase() : "U"}
+            {post.author_name ? post.author_name[0].toUpperCase() : 'U'}
           </div>
           <div>
             <h3 className="font-semibold text-gray-900 dark:text-white">
-              {post.author_name || "ユーザー"}
+              {post.author_name || 'ユーザー'}
             </h3>
             <div className="flex items-center space-x-1 text-sm text-gray-500">
               <Clock className="w-3 h-3" />
@@ -163,7 +163,7 @@ export default function TimelinePost({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center space-x-2">
                   <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {comment.is_ai ? "AI分析" : comment.author_name || "あなた"}
+                    {comment.is_ai ? 'AI分析' : comment.author_name || 'あなた'}
                   </span>
                   <span className="text-xs text-gray-500">
                     {formatTimeAgo(comment.timestamp)}

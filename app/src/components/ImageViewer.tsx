@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { useEffect, useState, useCallback } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import {
   Image as ImageIcon,
   MessageSquare,
@@ -7,8 +7,8 @@ import {
   User,
   Bot,
   Calendar,
-  X
-} from "lucide-react";
+  X,
+} from 'lucide-react';
 
 interface Comment {
   id: string;
@@ -35,11 +35,11 @@ interface ImageViewerProps {
 export default function ImageViewer({
   imageId,
   metadata,
-  onClose
+  onClose,
 }: ImageViewerProps) {
   const [imageData, setImageData] = useState<string | null>(null);
   const [comments, setComments] = useState<Comment[]>(metadata.user_comments);
-  const [newComment, setNewComment] = useState("");
+  const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,14 +48,14 @@ export default function ImageViewer({
     setLoading(true);
     setError(null);
     try {
-      const imageBytes = await invoke<number[]>("load_image", { imageId });
+      const imageBytes = await invoke<number[]>('load_image', { imageId });
       const uint8Array = new Uint8Array(imageBytes);
       const blob = new Blob([uint8Array]);
       const imageUrl = URL.createObjectURL(blob);
       setImageData(imageUrl);
     } catch (err) {
-      console.error("画像読み込みエラー:", err);
-      setError("画像の読み込みに失敗しました");
+      console.error('画像読み込みエラー:', err);
+      setError('画像の読み込みに失敗しました');
     } finally {
       setLoading(false);
     }
@@ -68,14 +68,14 @@ export default function ImageViewer({
   const saveComments = async (updatedComments: Comment[]) => {
     setSaving(true);
     try {
-      await invoke("update_image_comments", {
+      await invoke('update_image_comments', {
         imageId,
-        comments: updatedComments
+        comments: updatedComments,
       });
       setComments(updatedComments);
     } catch (err) {
-      console.error("コメント保存エラー:", err);
-      setError("コメントの保存に失敗しました");
+      console.error('コメント保存エラー:', err);
+      setError('コメントの保存に失敗しました');
     } finally {
       setSaving(false);
     }
@@ -88,22 +88,22 @@ export default function ImageViewer({
       id: `comment_${Date.now()}`,
       text: newComment.trim(),
       timestamp: new Date().toISOString(),
-      is_ai: false
+      is_ai: false,
     };
 
     const updatedComments = [...comments, comment];
     saveComments(updatedComments);
-    setNewComment("");
+    setNewComment('');
   };
 
   const formatDate = (timestamp: string) => {
     const date = new Date(timestamp);
-    return date.toLocaleDateString("ja-JP", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
+    return date.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   };
 
@@ -113,10 +113,10 @@ export default function ImageViewer({
   // AI分析結果をコメントとして追加
   if (metadata.analysis_result) {
     allComments.push({
-      id: "ai_analysis",
+      id: 'ai_analysis',
       text: metadata.analysis_result,
       timestamp: metadata.timestamp,
-      is_ai: true
+      is_ai: true,
     });
   }
 
@@ -196,7 +196,7 @@ export default function ImageViewer({
                         <User className="h-4 w-4 text-green-500" />
                       )}
                       <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {comment.is_ai ? "AI分析" : "あなた"}
+                        {comment.is_ai ? 'AI分析' : 'あなた'}
                       </span>
                       <span className="text-xs text-gray-500">
                         {formatDate(comment.timestamp)}
@@ -220,7 +220,7 @@ export default function ImageViewer({
                   placeholder="コメントを追加..."
                   className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                   onKeyPress={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
                       addComment();
                     }
