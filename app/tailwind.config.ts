@@ -1,15 +1,15 @@
-import type { Config } from "tailwindcss";
+import type { Config } from 'tailwindcss';
 
 const config: Config = {
-  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
       animation: {
-        "spin-slow": "spin 6s linear infinite"
-      }
-    }
+        'spin-slow': 'spin 6s linear infinite',
+      },
+    },
   },
-  plugins: []
+  plugins: [],
 };
 
 export default config;
