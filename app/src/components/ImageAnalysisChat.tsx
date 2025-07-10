@@ -1,3 +1,4 @@
+import { invoke } from '@tauri-apps/api/core';
 import {
   Image as ImageIcon,
   Loader2,
@@ -7,7 +8,6 @@ import {
   X,
 } from 'lucide-react';
 import { useState } from 'react';
-import { invoke } from '@tauri-apps/api/core';
 import { imageAnalysisAgent } from '~/lib/mastra/imageAnalysis';
 
 interface Comment {

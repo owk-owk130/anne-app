@@ -1,12 +1,31 @@
-import { useState, useEffect, useRef } from 'react';
-import { MoreHorizontal, Bot, User, Send, Clock, Trash2 } from 'lucide-react';
-import type { Post, Comment } from '~/types/posts';
+import {
+  Bot,
+  Camera,
+  Clock,
+  Loader2,
+  Mic,
+  MoreHorizontal,
+  Send,
+  Trash2,
+  User,
+  Volume2,
+  VolumeX,
+} from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { useSpeechToText } from '~/hooks/useSpeechToText';
+import { useTextToSpeech } from '~/hooks/useTextToSpeech';
+import type { Comment, Post } from '~/types/posts';
 
 interface TimelinePostProps {
   post: Post;
   onComment: (postId: string, comment: string) => void;
   onDeletePost: (postId: string) => void;
   onDeleteComment: (postId: string, commentId: string) => void;
+  analysisState?: {
+    isAnalyzing: boolean;
+    error?: string;
+  };
+  onAnalyze?: (postId: string) => void;
 }
 
 export default function TimelinePost({
@@ -14,10 +33,36 @@ export default function TimelinePost({
   onComment,
   onDeletePost,
   onDeleteComment,
+  analysisState,
+  onAnalyze,
 }: TimelinePostProps) {
   const [newComment, setNewComment] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // 音声機能のフック
+  const { 
+    isListening, 
+    isProcessing, 
+    transcript, 
+    startListening, 
+    stopListening, 
+    error: sttError 
+  } = useSpeechToText();
+  
+  const { 
+    isPlaying, 
+    speak, 
+    stop: stopSpeaking, 
+    error: ttsError 
+  } = useTextToSpeech();
+
+  // 音声認識結果をコメントに反映
+  useEffect(() => {
+    if (transcript) {
+      setNewComment(transcript);
+    }
+  }, [transcript]);
 
   // 外部クリックでドロップダウンを閉じる
   useEffect(() => {
@@ -81,6 +126,34 @@ export default function TimelinePost({
       timestamp: post.timestamp,
       is_ai: true,
     });
+  } else if (!analysisState?.isAnalyzing) {
+    // 未分析の場合の表示
+    allComments.push({
+      id: 'unanalyzed',
+      text: '📷 AI分析待ち - 右上のメニューから分析を実行できます',
+      timestamp: post.timestamp,
+      is_ai: true,
+    });
+  }
+
+  if (analysisState?.isAnalyzing) {
+    // 分析中の表示 - アニメーション付きローディング
+    allComments.push({
+      id: 'analyzing',
+      text: '🤖 AI画像分析を実行中です... しばらくお待ちください',
+      timestamp: post.timestamp,
+      is_ai: true,
+    });
+  }
+
+  if (analysisState?.error) {
+    // エラー時の表示
+    allComments.push({
+      id: 'analysis_error',
+      text: `⚠️ 分析エラー: ${analysisState.error}`,
+      timestamp: post.timestamp,
+      is_ai: true,
+    });
   }
 
   allComments.push(...post.comments);
@@ -117,6 +190,28 @@ export default function TimelinePost({
 
           {showDropdown && (
             <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-10">
+              {/* AI分析ボタン（未分析またはエラー時のみ表示） */}
+              {(!post.ai_analysis || analysisState?.error) && onAnalyze && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onAnalyze(post.id);
+                    setShowDropdown(false);
+                  }}
+                  disabled={analysisState?.isAnalyzing}
+                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors disabled:opacity-50"
+                >
+                  {analysisState?.isAnalyzing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Camera className="w-4 h-4" />
+                  )}
+                  <span>
+                    {analysisState?.isAnalyzing ? '分析中...' : 'AI分析実行'}
+                  </span>
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={() => {
@@ -141,6 +236,17 @@ export default function TimelinePost({
             alt={post.original_name}
             className="w-full max-h-96 object-cover"
           />
+          {/* 分析中のオーバーレイ */}
+          {analysisState?.isAnalyzing && (
+            <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 flex items-center space-x-3 shadow-lg">
+                <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  AI分析中...
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -152,7 +258,11 @@ export default function TimelinePost({
               <div className="flex-shrink-0">
                 {comment.is_ai ? (
                   <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                    <Bot className="w-4 h-4 text-white" />
+                    {comment.id === 'analyzing' ? (
+                      <Loader2 className="w-4 h-4 text-white animate-spin" />
+                    ) : (
+                      <Bot className="w-4 h-4 text-white" />
+                    )}
                   </div>
                 ) : (
                   <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
@@ -169,25 +279,77 @@ export default function TimelinePost({
                     {formatTimeAgo(comment.timestamp)}
                   </span>
                 </div>
-                <p className="text-sm text-gray-700 dark:text-gray-300 mt-1 whitespace-pre-wrap">
+                <p
+                  className={`text-sm mt-1 whitespace-pre-wrap ${
+                    comment.id === 'analyzing'
+                      ? 'text-blue-600 dark:text-blue-400 font-medium animate-pulse'
+                      : 'text-gray-700 dark:text-gray-300'
+                  }`}
+                >
                   {comment.text}
                 </p>
               </div>
 
-              {/* コメント削除ボタン（ユーザーコメントのみ） */}
-              {!comment.is_ai && (
-                <button
-                  type="button"
-                  onClick={() => onDeleteComment(post.id, comment.id)}
-                  className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                  title="コメントを削除"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </button>
-              )}
+              {/* アクションボタン */}
+              <div className="flex items-center space-x-1">
+                {/* AI分析結果の読み上げボタン */}
+                {comment.is_ai && comment.id !== 'analyzing' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isPlaying) {
+                        stopSpeaking();
+                      } else {
+                        speak(comment.text);
+                      }
+                    }}
+                    className="p-1 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                    title={isPlaying ? "再生を停止" : "読み上げる"}
+                  >
+                    {isPlaying ? (
+                      <VolumeX className="w-3 h-3" />
+                    ) : (
+                      <Volume2 className="w-3 h-3" />
+                    )}
+                  </button>
+                )}
+                
+                {/* コメント削除ボタン（ユーザーコメントのみ） */}
+                {!comment.is_ai && (
+                  <button
+                    type="button"
+                    onClick={() => onDeleteComment(post.id, comment.id)}
+                    className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                    title="コメントを削除"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>
+
+        {/* エラーメッセージ */}
+        {(sttError || ttsError) && (
+          <div className="mt-4 px-3 py-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <p className="text-sm text-red-600 dark:text-red-400">
+              {sttError || ttsError}
+            </p>
+            {/* Androidエミュレーター用の追加情報 */}
+            {ttsError && ttsError.includes("音声再生が許可されていません") && (
+              <p className="text-xs text-red-500 dark:text-red-300 mt-1">
+                💡 ヒント: Androidエミュレーターの場合は、エミュレーターの音量設定とホストマシンの音量を確認してください
+              </p>
+            )}
+            {/* Web Speech API非対応ブラウザの警告 */}
+            {sttError && sttError.includes("このブラウザは音声認識をサポートしていません") && (
+              <p className="text-xs text-red-500 dark:text-red-300 mt-1">
+                💡 ヒント: Chrome、Edge、Safariなどの最新ブラウザをお使いください
+              </p>
+            )}
+          </div>
+        )}
 
         {/* 新しいコメント入力 */}
         <div className="mt-4 flex items-center space-x-3">
@@ -200,13 +362,36 @@ export default function TimelinePost({
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="コメントを追加..."
-              className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+              placeholder={isListening ? "音声認識中..." : "コメントを追加..."}
+              disabled={isListening || isProcessing}
+              className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white disabled:opacity-50"
             />
+            
+            {/* 音声入力ボタン */}
+            <button
+              type="button"
+              onClick={isListening ? stopListening : startListening}
+              disabled={isProcessing}
+              className={`p-2 rounded-full transition-all ${
+                isListening 
+                  ? 'bg-red-500 text-white animate-pulse scale-110' 
+                  : isProcessing
+                  ? 'bg-gray-300 text-gray-500'
+                  : 'bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
+              }`}
+              title={isListening ? "録音を停止" : "音声入力"}
+            >
+              {isProcessing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Mic className="w-4 h-4" />
+              )}
+            </button>
+            
             <button
               type="button"
               onClick={handleAddComment}
-              disabled={!newComment.trim()}
+              disabled={!newComment.trim() || isListening || isProcessing}
               className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Send className="w-4 h-4" />

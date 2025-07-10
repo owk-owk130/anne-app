@@ -1,14 +1,14 @@
-import { useEffect, useState, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import {
+  Bot,
+  Calendar,
   Image as ImageIcon,
   MessageSquare,
   Send,
   User,
-  Bot,
-  Calendar,
   X,
 } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 
 interface Comment {
   id: string;

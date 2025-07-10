@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { Loader2, X, Sparkles, Upload } from 'lucide-react';
+import { Loader2, Sparkles, Upload, X } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { imageAnalysisAgent } from '~/lib/mastra/imageAnalysis';
 
 interface NewPostComposerProps {

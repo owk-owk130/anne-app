@@ -1,5 +1,5 @@
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { generateText } from 'ai';
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { generateText } from "ai";
 
 export const imageAnalysisAgent = async (
   imageBase64: string
@@ -8,20 +8,20 @@ export const imageAnalysisAgent = async (
 
   if (!apiKey) {
     throw new Error(
-      'Google AI API key is not configured. Please set VITE_GOOGLE_AI_API_KEY in your .env.local file.'
+      "Google AI API key is not configured. Please set VITE_GOOGLE_AI_API_KEY in your .env.local file."
     );
   }
 
   const google = createGoogleGenerativeAI({ apiKey });
 
   const { text } = await generateText({
-    model: google('gemini-1.5-flash'),
+    model: google("gemini-1.5-flash"),
     messages: [
       {
-        role: 'user',
+        role: "user",
         content: [
           {
-            type: 'text',
+            type: "text",
             text: `あなたは猫の表情と感情を読み取る専門家です。
 送られてきた画像を詳細に観察し、文章で説明してください：
 
@@ -41,15 +41,17 @@ export const imageAnalysisAgent = async (
 - その対象の特徴や状態
 - 周囲の環境
 
-analysis は最低でも3-4文以上の詳細な観察内容を含めてください。`,
+最低でも3-4文以上の詳細な観察内容を含めてください。
+テキストは見出しなどはつけず、読み上げられるように自然な文章でお願いします。
+`
           },
           {
-            type: 'image',
-            image: imageBase64,
-          },
-        ],
-      },
-    ],
+            type: "image",
+            image: imageBase64
+          }
+        ]
+      }
+    ]
   });
 
   return text;

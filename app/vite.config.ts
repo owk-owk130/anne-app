@@ -1,8 +1,9 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
 import path from 'node:path';
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
 
 const host = process.env.TAURI_DEV_HOST;
+const isDev = process.env.NODE_ENV !== 'production';
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
@@ -23,7 +24,8 @@ export default defineConfig(async () => ({
   server: {
     port: 1420,
     strictPort: true,
-    host: host || false,
+    // 開発時はlocalhostを使用、本番時はネットワークアクセス可能にする
+    host: host || (isDev ? 'localhost' : '0.0.0.0'),
     hmr: host
       ? {
           protocol: 'ws',

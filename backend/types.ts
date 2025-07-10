@@ -1,4 +1,4 @@
-import type { Request } from "express";
+import type { Request } from 'express';
 
 // Upload API types - Multer adds file property to Request
 export interface UploadRequest extends Request {
@@ -6,15 +6,14 @@ export interface UploadRequest extends Request {
 }
 
 export interface UploadResponse {
-  status: "success" | "error";
+  status: 'success' | 'error';
   id?: string;
-  analysis?: string;
   message?: string;
 }
 
 // Health API types
 export interface HealthResponse {
-  status: "ok";
+  status: 'ok';
   uptime: number;
   timestamp: string;
 }
@@ -37,7 +36,7 @@ export interface ImageMetadata {
   filename: string;
   original_name: string;
   timestamp: string;
-  analysis_result?: string;
+  analysis_result: string | null;
   user_comments: Array<{
     id: string;
     text: string;

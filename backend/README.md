@@ -1,16 +1,18 @@
 # Anne App Backend
 
-IoTデバイスやAPKアプリから同一ネットワーク内で画像をアップロードできるバックエンドサーバーです。Tauriアプリとデータを共有し、アップロードされた画像は自動でAI分析されタイムラインに表示されます。
+IoT デバイスや APK アプリから同一ネットワーク内で画像をアップロードできるバックエンドサーバーです。Tauri アプリとデータを共有し、アップロードされた画像は自動で AI 分析されタイムラインに表示されます。
 
 ## 🚀 機能
 
 - **同一ネットワーク内アクセス**: `0.0.0.0`バインディングでネットワーク内の任意の端末からアクセス可能
-- **画像アップロード**: IoTデバイス/Tauriアプリからの画像受信
-- **AI分析**: アップロードされた画像の自動分析
-- **Tauri統合**: 既存のTauriアプリと完全にデータ統合
-- **RESTful API**: 標準的なHTTP APIエンドポイント
+- **画像アップロード**: IoT デバイス/Tauri アプリからの画像受信
+- **AI 分析**: アップロードされた画像の自動分析
+- **Tauri 統合**: 既存の Tauri アプリと完全にデータ統合
+- **RESTful API**: 標準的な HTTP API エンドポイント
 
 ## 📋 API エンドポイント
+
+### 基本エンドポイント
 
 ### `GET /api/health`
 
@@ -43,7 +45,13 @@ IoTデバイスやAPKアプリから同一ネットワーク内で画像をア�
       }
     ]
   },
-  "endpoints": ["GET /api/health", "GET /api/info", "POST /api/upload"]
+  "endpoints": [
+    "GET /api/health",
+    "GET /api/info",
+    "POST /api/upload",
+    "GET /api/metadata",
+    "GET /api/images/:filename"
+  ]
 }
 ```
 
@@ -77,32 +85,83 @@ IoTデバイスやAPKアプリから同一ネットワーク内で画像をア�
 }
 ```
 
+### データ同期エンドポイント
+
+### `GET /api/metadata`
+
+全画像メタデータの取得（Tauri アプリとの同期用）
+
+**レスポンス例:**
+
+```json
+{
+  "images": [
+    {
+      "id": "img_1750060744126",
+      "filename": "img_1750060744126.jpg",
+      "original_name": "cat_photo.jpg",
+      "timestamp": "2025-06-25T12:00:00.000Z",
+      "analysis_result": "分析結果テキスト",
+      "user_comments": []
+    }
+  ]
+}
+```
+
+### `GET /api/metadata/since/:timestamp`
+
+指定タイムスタンプ以降の新着画像取得
+
+**レスポンス例:**
+
+```json
+{
+  "status": "success",
+  "since": "2025-06-25T12:00:00.000Z",
+  "new_images": [...],
+  "count": 3
+}
+```
+
+### `GET /api/images/:filename`
+
+画像ファイルの配信
+
+**パラメータ:**
+
+- `filename`: 画像ファイル名
+
+**レスポンス:**
+
+- Content-Type: `image/jpeg`, `image/png`, etc.
+- 画像バイナリデータ
+
 ## 🛠️ セットアップ
 
 ### 依存関係のインストール
 
 ```bash
-bun install
+npm install
 ```
 
 ### 開発環境での起動
 
 ```bash
 # 開発モード（ファイル監視あり）
-bun run dev
+npm run dev
 
-# 直接実行
-bun run index.ts
+# 直接実行（TypeScript）
+npm run start
 ```
 
 ### 本番環境での起動
 
 ```bash
 # ビルド
-bun run build
+npm run build
 
 # 本番実行
-bun run start:prod
+npm run start:prod
 ```
 
 ### 環境変数
@@ -150,7 +209,7 @@ curl -X POST http://192.168.1.100:3000/api/upload \\
 
 ## 🎯 実用例
 
-### IoTデバイス（Python）
+### IoT デバイス（Python）
 
 ```python
 import requests
@@ -162,35 +221,29 @@ response = requests.post(url, files=files)
 print(response.json())
 ```
 
-### Tauriアプリ（モバイル/デスクトップ）
+### Tauri アプリ（モバイル/デスクトップ）
 
 ```typescript
-import { fetch } from '@tauri-apps/plugin-http';
-
+// 標準 fetch API を使用（Tauri HTTPプラグインは未使用）
 // 画像ファイルを選択（Tauriのダイアログ使用）
-import { open } from '@tauri-apps/plugin-dialog';
+import { open } from "@tauri-apps/plugin-opener";
 
-const selected = await open({
-  multiple: false,
-  filters: [{
-    name: 'Image',
-    extensions: ['png', 'jpg', 'jpeg', 'gif']
-  }]
+// プラットフォーム別のAPI URL取得
+import { getApiUrl } from "../utils/api";
+
+const apiUrl = getApiUrl(); // 環境に応じて自動切り替え
+
+// ファイル選択とアップロード
+const formData = new FormData();
+formData.append("image", imageFile);
+
+const response = await fetch(`${apiUrl}/api/upload`, {
+  method: "POST",
+  body: formData
 });
 
-if (selected) {
-  const formData = new FormData();
-  const imageFile = await fetch(selected).then(r => r.blob());
-  formData.append('image', imageFile);
-
-  const response = await fetch('http://192.168.1.100:3000/api/upload', {
-    method: 'POST',
-    body: formData
-  });
-
-  const result = await response.json();
-  console.log(result);
-}
+const result = await response.json();
+console.log(result);
 ```
 
 ### Node.js/JavaScript
@@ -236,7 +289,7 @@ backend/
 - **画像ファイル**: `~/Library/Application Support/anne-app/images/`
 - **メタデータ**: `~/Library/Application Support/anne-app/metadata.json`
 
-これによりTauriアプリと完全にデータを共有できます。
+これにより Tauri アプリと完全にデータを共有できます。
 
 ## 🚨 トラブルシューティング
 
@@ -263,19 +316,19 @@ ifconfig | grep "inet "
 
 ### 画像アップロードが失敗する
 
-- ファイルサイズが10MB以下か確認
-- 画像形式がJPG/PNG/GIFか確認
+- ファイルサイズが 10MB 以下か確認
+- 画像形式が JPG/PNG/GIF か確認
 - `Content-Type: multipart/form-data`が設定されているか確認
 
 ## 📈 拡張方法
 
-### AI分析エンジンの変更
+### AI 分析エンジンの変更
 
-`utils.ts`の`analyzeImage`関数を編集してMastraや他のAIサービスと連携可能です。
+`utils.ts`の`analyzeImage`関数を編集して Mastra や他の AI サービスと連携可能です。
 
 ### 認証の追加
 
-必要に応じて`index.ts`にトークン認証やBasic認証を追加できます。
+必要に応じて`index.ts`にトークン認証や Basic 認証を追加できます。
 
 ### ログ機能の強化
 
@@ -285,7 +338,7 @@ ifconfig | grep "inet "
 
 ## 🔗 関連プロジェクト
 
-- **Tauriアプリ**: `../app/` - デスクトップ画像分析アプリ
-- **プロジェクト全体**: `../` - Anne Appモノレポ
+- **Tauri アプリ**: `../app/` - デスクトップ画像分析アプリ
+- **プロジェクト全体**: `../` - Anne App モノレポ
 
-Built with [Bun](https://bun.sh) 🥟
+Built with [Node.js](https://nodejs.org) and [TypeScript](https://typescriptlang.org) 🚀

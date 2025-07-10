@@ -1,16 +1,23 @@
-import { useState, useEffect, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { RefreshCw, Sparkles } from 'lucide-react';
-import TimelinePost from './TimelinePost';
-import NewPostComposer from './NewPostComposer';
-import ConfirmDialog from './ConfirmDialog';
+import { useCallback, useEffect, useState } from 'react';
+import { useFileWatcher } from '~/hooks/useFileWatcher';
+import { useNetworkSync } from '~/hooks/useNetworkSync';
+import { imageAnalysisAgent } from '~/lib/mastra/imageAnalysis';
 import type { Post } from '~/types/posts';
+import { getApiUrlAsync, checkApiConnection } from '~/utils/api';
+import ConfirmDialog from './ConfirmDialog';
+import NewPostComposer from './NewPostComposer';
+import TimelinePost from './TimelinePost';
 
 export default function Timeline() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [analyzingPosts, setAnalyzingPosts] = useState<Set<string>>(new Set());
+  const [serverUrl, setServerUrl] = useState<string>('');
+  const [apiConnected, setApiConnected] = useState<boolean>(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{
     isOpen: boolean;
     postId: string | null;
@@ -30,10 +37,11 @@ export default function Timeline() {
     setError(null);
 
     try {
-      // invoke関数の利用可能性を確認
+      // Tauri環境チェック
       if (typeof invoke === 'undefined') {
-        console.error('invoke関数が利用できません');
-        throw new Error('Tauri APIが利用できません');
+        console.warn('Tauri invoke関数が利用できません。');
+        setPosts([]);
+        return;
       }
 
       // 既存の画像メタデータを取得してPostsに変換
@@ -85,9 +93,190 @@ export default function Timeline() {
     }
   }, []);
 
+  // APIサーバーの検出と接続
+  useEffect(() => {
+    const initializeApi = async () => {
+      console.log('APIサーバーを検出中...');
+      const url = await getApiUrlAsync();
+      console.log('検出されたAPIサーバーURL:', url);
+      setServerUrl(url);
+
+      const connected = await checkApiConnection();
+      console.log('APIサーバー接続状態:', connected);
+      setApiConnected(connected);
+
+      if (connected) {
+        console.log(`APIサーバーに接続しました: ${url}`);
+      } else {
+        console.warn(`APIサーバーに接続できません: ${url}`);
+      }
+    };
+
+    initializeApi();
+  }, []);
+
+  // 初期化時に常に投稿を読み込み
   useEffect(() => {
     loadPosts();
   }, [loadPosts]);
+
+  // serverUrlが設定された時の追加読み込み
+  useEffect(() => {
+    if (serverUrl) {
+      loadPosts(true);
+    }
+  }, [serverUrl, loadPosts]);
+
+  // 新しい画像の自動分析
+  const autoAnalyzeNewImages = useCallback(async () => {
+    console.log('未分析画像の自動分析を開始');
+    console.log('現在の投稿数:', posts.length);
+
+    const unanalyzedPosts = posts.filter((post) => !post.ai_analysis);
+    console.log('未分析の投稿数:', unanalyzedPosts.length);
+
+    if (unanalyzedPosts.length === 0) {
+      console.log('未分析の投稿がありません');
+      return;
+    }
+
+    // 分析中の投稿IDsを記録
+    const analyzingIds = new Set(unanalyzedPosts.map((post) => post.id));
+    setAnalyzingPosts(analyzingIds);
+
+    for (const post of unanalyzedPosts) {
+      try {
+        console.log(`画像 ${post.id} (${post.original_name}) の自動分析を開始`);
+
+        // 画像データを取得
+        const imageBytes = await invoke<number[]>('load_image', {
+          imageId: post.id,
+        });
+        console.log(`画像データ取得完了: ${imageBytes.length} bytes`);
+
+        // Uint8ArrayからBase64に変換
+        const uint8Array = new Uint8Array(imageBytes);
+        const blob = new Blob([uint8Array]);
+        const reader = new FileReader();
+
+        const base64 = await new Promise<string>((resolve, reject) => {
+          reader.onloadend = () => {
+            const result = reader.result as string;
+            const base64Data = result.split(',')[1]; // "data:image/...;base64," を除去
+            resolve(base64Data);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+        console.log('Base64変換完了');
+
+        // AI分析実行
+        console.log('AI分析を実行中...');
+        const analysisResult = await imageAnalysisAgent(base64);
+        console.log(`AI分析完了: ${analysisResult.substring(0, 100)}...`);
+
+        // 分析結果をTauriに保存
+        await invoke('update_image_analysis', {
+          imageId: post.id,
+          analysisResult,
+        });
+        console.log(`画像 ${post.id} の分析結果を保存完了`);
+
+        // この投稿の分析が完了したので分析中状態から削除
+        setAnalyzingPosts((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(post.id);
+          return newSet;
+        });
+
+        // 少し待機（API制限を避けるため）
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      } catch (error) {
+        console.error(`画像 ${post.id} の自動分析エラー:`, error);
+
+        // エラーの場合もこの投稿を分析中状態から削除
+        setAnalyzingPosts((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(post.id);
+          return newSet;
+        });
+
+        // エラーの場合は次の画像に進む
+      }
+    }
+
+    // すべての分析が完了したらタイムラインを更新し、分析中状態をクリア
+    if (unanalyzedPosts.length > 0) {
+      console.log('自動分析完了、タイムラインを更新');
+      setAnalyzingPosts(new Set()); // 分析中状態をクリア
+      await loadPosts(true);
+    }
+  }, [posts, loadPosts]);
+
+  // 投稿が読み込まれた後に自動分析を実行
+  useEffect(() => {
+    if (posts.length > 0) {
+      const unanalyzedPosts = posts.filter((post) => !post.ai_analysis);
+      if (unanalyzedPosts.length > 0) {
+        console.log('未分析の投稿が見つかりました。自動分析を開始します。');
+        setTimeout(() => {
+          autoAnalyzeNewImages();
+        }, 1000);
+      }
+    }
+  }, [posts, autoAnalyzeNewImages]); // 必要な依存関係を追加
+
+  // ネットワーク同期機能
+  const handleNewNetworkImages = useCallback(
+    async (newImages: any[]) => {
+      console.log(`ネットワークから新着画像 ${newImages.length} 件を受信`);
+
+      // 強制的に投稿リストをリフレッシュ
+      setRefreshing(true);
+      try {
+        await loadPosts(true);
+        // 少し待機してから自動分析
+        setTimeout(() => {
+          autoAnalyzeNewImages();
+        }, 2000);
+      } finally {
+        setRefreshing(false);
+      }
+    },
+    [loadPosts, autoAnalyzeNewImages]
+  );
+
+  // WebSocket同期の有効化条件
+  const networkSyncEnabled = !!serverUrl;
+
+  const networkSyncResult = useNetworkSync({
+    serverUrl,
+    onNewImages: handleNewNetworkImages,
+    enabled: networkSyncEnabled,
+  });
+
+  // WebSocket接続状態をログ出力
+  useEffect(() => {
+    console.log('📡 WebSocket状態更新:', {
+      serverUrl,
+      enabled: networkSyncEnabled,
+      isConnected: networkSyncResult?.isConnected,
+    });
+  }, [serverUrl, networkSyncEnabled, networkSyncResult?.isConnected]);
+
+  // ファイルウォッチャーでバックエンドからのアップロードを検出
+  useFileWatcher({
+    onFileChange: async () => {
+      console.log('ファイル変更を検出、投稿を再読み込みと自動分析');
+      await loadPosts(true);
+
+      // 未分析の画像があれば自動分析を実行
+      setTimeout(() => {
+        autoAnalyzeNewImages();
+      }, 500); // 投稿読み込み後に少し遅らせて実行
+    },
+    interval: 2000, // 2秒間隔でチェック
+  });
 
   // Object URLsのクリーンアップ用
   useEffect(() => {
@@ -106,19 +295,11 @@ export default function Timeline() {
     aiAnalysis?: string
   ) => {
     try {
-      // Tauri環境のデバッグログ
-      console.log('Tauri環境チェック:', {
-        windowDefined: typeof window !== 'undefined',
-        tauriObject: (window as any).__TAURI__,
-        invokeFunction: typeof invoke,
-        userAgent: navigator.userAgent,
-      });
-
-      // より柔軟なTauri環境チェック
+      // Tauri環境チェック
       if (typeof invoke === 'undefined') {
-        throw new Error(
-          'Tauri invoke関数が利用できません。ブラウザで実行されている可能性があります。'
-        );
+        console.error('Tauri invoke関数が利用できません。');
+        setError('投稿作成機能が利用できません。');
+        return;
       }
 
       const postId = await invoke<string>('save_image', {
@@ -273,6 +454,17 @@ export default function Timeline() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             画像分析タイムライン
           </h1>
+          {/* WebSocket接続状態インジケーター */}
+          {serverUrl && (
+            <div className="flex items-center space-x-1 text-xs">
+              <div
+                className={`w-2 h-2 rounded-full ${apiConnected ? 'bg-green-500' : 'bg-red-500'}`}
+              />
+              <span className="text-gray-600 dark:text-gray-400">
+                {apiConnected ? 'API接続済' : 'API未接続'}
+              </span>
+            </div>
+          )}
         </div>
         <button
           type="button"
@@ -317,6 +509,9 @@ export default function Timeline() {
               onComment={handleComment}
               onDeletePost={handleDeletePost}
               onDeleteComment={handleDeleteComment}
+              analysisState={{
+                isAnalyzing: analyzingPosts.has(post.id),
+              }}
             />
           ))
         )}

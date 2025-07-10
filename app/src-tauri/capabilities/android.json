@@ -1,0 +1,23 @@
+{
+  "identifier": "android",
+  "description": "Android-specific permissions including microphone access",
+  "platforms": ["android"],
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "opener:default",
+    "fs:allow-read-dir",
+    "fs:allow-read-file",
+    "fs:allow-write-file",
+    "fs:allow-create",
+    "fs:allow-exists",
+    "fs:allow-stat",
+    "fs:allow-mkdir",
+    "fs:allow-remove",
+    "fs:allow-read-text-file",
+    "fs:allow-write-text-file",
+    "fs:allow-appdata-read-recursive",
+    "fs:allow-appdata-write-recursive",
+    "fs:allow-appdata-meta-recursive"
+  ]
+}
