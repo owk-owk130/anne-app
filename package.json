@@ -1,0 +1,60 @@
+{
+  "name": "anne-app-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Anne App Monorepo",
+  "workspaces": [
+    "app",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:app:web\" \"npm run dev:app:android\" \"npm run dev:backend\"",
+    "dev:full": "concurrently \"npm run dev:app:web\" \"npm run dev:app:android\" \"npm run dev:backend\"",
+    "dev:app": "npm run --workspace=app tauri dev",
+    "dev:app:web": "npm run --workspace=app dev",
+    "dev:app:ios": "npm run --workspace=app tauri ios dev",
+    "dev:app:android": "npm run --workspace=app tauri android dev",
+    "dev:backend": "npm run --workspace=backend dev",
+    "build": "npm run build:app && npm run build:backend",
+    "build:app": "npm run --workspace=app tauri build",
+    "build:app:web": "npm run --workspace=app build",
+    "build:app:ios": "npm run --workspace=app tauri ios build",
+    "build:app:android": "npm run --workspace=app tauri android build",
+    "build:backend": "npm run --workspace=backend build",
+    "lint": "npm run lint:app && npm run lint:backend",
+    "lint:app": "npm run --workspace=app lint",
+    "lint:backend": "npm run --workspace=backend lint",
+    "lint:fix": "npm run lint:fix:app && npm run lint:fix:backend",
+    "lint:fix:app": "npm run --workspace=app lint:fix",
+    "lint:fix:backend": "npm run --workspace=backend lint:fix",
+    "format": "npm run format:app && npm run format:backend",
+    "format:app": "npm run --workspace=app format",
+    "format:backend": "npm run --workspace=backend format",
+    "format:fix": "npm run format:fix:app && npm run format:fix:backend",
+    "format:fix:app": "npm run --workspace=app format:fix",
+    "format:fix:backend": "npm run --workspace=backend format:fix",
+    "check": "npm run check:app && npm run check:backend",
+    "check:app": "npm run --workspace=app check",
+    "check:backend": "npm run --workspace=backend check",
+    "check:fix": "npm run check:fix:app && npm run check:fix:backend",
+    "check:fix:app": "npm run --workspace=app check:fix",
+    "check:fix:backend": "npm run --workspace=backend check:fix",
+    "clean": "rm -rf app/node_modules backend/node_modules app/dist backend/dist app/.vite",
+    "install:all": "npm install",
+    "setup:ios": "npm run --workspace=app tauri ios init",
+    "setup:android": "npm run --workspace=app tauri android init"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "concurrently": "^8.2.2",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "dependencies": {
+    "form-data": "^4.0.3",
+    "node-fetch": "^3.3.2"
+  }
+}
